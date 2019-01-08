@@ -1,0 +1,80 @@
+Pandas code stuff...
+
+# Get descriptive stats for each month
+df_month_stats = df.groupby(df["DateTimeStamp"].dt.month).describe()
+# df_month_stats["Param"] will return stats for 'Param' for each month
+# https://stackoverflow.com/questions/45003806/python-pandas-use-slice-with-describe-versions-greater-than-0-20
+# To get mean of all params
+# df_month_stats.loc[:, (slice(None), ['mean'])]
+# To get a specific month...
+# df.loc[df['DateTimeStamp'].dt.month==2].describe()
+
+# Other methods
+# df2 = df.groupby([lambda x: x.month]).sum()
+# df2=df.resample('M').mean()
+# print(df2.head(12))
+
+# df.to_csv("modded_data.csv")
+
+Dealing with the data...
+After some consideration, I believe it's better to upload the raw data into a sql database without any sort of modifications.  The reason for using a database is because I've got too many rows of information spread throughout a bunch of files.  While I could use pandas to perform operations in-memmory, I fear that my cheapo computer won't be able to handle the workload, not to mention that the database provides a more manageable repo to get data saving me the hassle of having to crawl through a bunch of csv file with code. I can then filter the data using sql statements and avoid any problems that may arise from having excluded/modified - intentionally or unintentionally - the original dataset.  
+
+/// excluded code///
+    META_PARAMS = [
+        "StationCode", "DateTimeStamp",
+    ]
+
+    VAL_PARAMS = [
+        "Temp", "SpCond", "Sal", "DO_Pct",
+        "DO_mgl", "Depth", "pH", "Turb"
+    ]
+
+    flag_params = ["F_"+val for val in VAL_PARAMS]
+
+    FLAG_EXCLUDE_CODES = ["<-5>", "<-4>", "<-3>", "<-2>", "<-1>"]
+
+    included_cols = META_PARAMS + VAL_PARAMS + flag_params
+
+    # GET csv
+    df = pd.read_csv(
+        csv_path,
+        usecols=included_cols)
+
+    # CONVERT to datetime
+    df['DateTimeStamp'] = pd.to_datetime(df['DateTimeStamp'])
+    # df.set_index(df["DateTimeStamp"], inplace=True)
+
+    # EXCLUDE values by QA flags
+    # If flagged, replace value with NaN; else leave value intact
+    for param in VAL_PARAMS:
+        df[param] = np.where(
+            df['F_'+param].str.contains(
+                "|".join(FLAG_EXCLUDE_CODES), case=False),
+            np.NaN, df[param]
+        )
+----
+
+Note that including the id as index in the pandas dataframe will conflict when trying to import the data into the database.  Therefore I'm considering not altering the database with sqlalchemy inside the function to create the corresponding column.  There are a few options to get around this such as:
+1) Creating the table with the serial primary key and then importing the dataframe with the id-less data.
+2) Drop the id column and recreate it.  Involves multiple calls to the database which may not be very efficient.
+3) Aggregate all the data in the dataframe before calling the pandas.to_sql() function and then add it with the id column.
+
+What I can do is to ask for the path where the csv files are, then I scan all the csv files in the directory and put them into the corresponding arrays like so...
+water_quality = [a,b,c]
+water_nutrients = [x,y,z]
+
+Then for x in array:
+	corresponding_function(x, y)
+
+I can then merge to column creation functions I already have, so with some conditionals I can agregate all the data into a two dataframes (quality, nutrients) and then export both of them into the db and alter the tables to add a serial primary key (id).
+
+--- 
+Ran into an issue with to_sql... it's too damn slow!  Therefore, I'll use https://github.com/d6t/d6tstack to export the csv data to postgres...
+
+---
+Now that I've got the code to populate the database, I need to link them all toguether.  Afterwards, I'll finally be able to play around with the data...
+
+---
+
+Decided to use sqlalchemy to create the schema and whatnot.  Was unable to use pandas to_sql and sqlalchemy's inserts/mass inserts methods because they were too slow.  Best work around I found is to agregate all the data into a dataframe, export to csv and then use that csv and a raw_connection to copy the csv into the database.  I was also able to use the same connection to populate the station_id for the dataset...
+
