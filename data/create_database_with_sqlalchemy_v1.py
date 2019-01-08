@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION, TIMESTAMP
 
 print("Running Create Database with sqlalchemy script...")
 
+
 Base = declarative_base()
 
 
