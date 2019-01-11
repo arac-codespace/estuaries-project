@@ -1,8 +1,7 @@
 import os
 import pandas as pd
-import pdb
+# import pdb
 import fnmatch
-import d6tstack
 from configparser import ConfigParser
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -174,14 +173,11 @@ def drop_tables():
     print("Done...")
 
 
-def populate_stations():
+def populate_stations(directory="."):
     print("Populating stations table...")
-    directory = "C:/pySites/estuary-project/src/data/original-estuary-dataset/jobos-bay"
     filenames = os.listdir(directory)
-    # filtered_filenames = filter_filenames(filenames)
 
     df = pd.read_csv(os.path.join(directory, "jobos_sites.csv"))
-    # pdb.set_trace()
 
     cfg_uri_psql = create_cfg_uri()
     engine = create_engine(cfg_uri_psql)
@@ -227,8 +223,14 @@ def filter_filenames(filenames):
         elif fnmatch.fnmatch(file, '*met*') and fnmatch.fnmatch(file, '*.csv'):
             meteorology_files.append(file)
 
-    if not len(water_quality_files) > 0 and not len(water_nutrient_files) > 0 and not len(meteorology_files) > 0:
-        raise ValueError("There are no valid data files in the specified directory")
+    if not (
+        len(water_quality_files) and
+        len(water_nutrient_files) and
+        len(meteorology_files)
+    ):
+        raise ValueError(
+            "There are no valid data files in the specified directory"
+        )
 
     filtered_filenames = {
         "water_quality": water_quality_files,
@@ -265,7 +267,7 @@ def create_table_object(user_input, directory):
 
 
 def tables_to_populate():
-    directory = "C:/pySites/estuary-project/src/data/original-estuary-dataset/jobos-bay"
+    directory = "./original-estuary-dataset/jobos-bay"
     cfg_uri_psql = create_cfg_uri()
     engine = create_engine(cfg_uri_psql)
 
@@ -273,19 +275,22 @@ def tables_to_populate():
     while valid_input is False:
         print("Choose which table to populate...")
         print("1) Water Quality, 2) Water Nutrients, 3) Meteorology, 4) Stations, 5) Exit")
-        user_input = input()
-        user_input = int(user_input)
+        try:
+            user_input = input()
+            user_input = int(user_input)
 
-        if user_input == 1 or user_input == 2 or user_input == 3:
-            table_object = create_table_object(user_input, directory)
-            panda_to_csv(table_object, engine)
-        elif user_input == 4:
-            populate_stations()
-        elif user_input == 5:
-            print("Exiting...")
-            break
-        else:
-            print("Please input a valid option...")
+            if 1 <= user_input <= 3:
+                # print("Input:" + str(user_input))
+                table_object = create_table_object(user_input, directory)
+                panda_to_csv(table_object, engine)
+            elif user_input == 4:
+                # print("Input:" + str(user_input))
+                populate_stations(directory)
+            elif user_input == 5:
+                print("Exiting...")
+                break
+        except ValueError:
+            print("Input must be an integer.")
             valid_input = False
 
 
@@ -307,9 +312,13 @@ def panda_to_csv(table_object, engine):
 
     print("Agregating data and importing to dataframe")
 
-    df = pd.concat((pd.read_csv(
-        os.path.join(directory, f),  usecols=(lambda x, l_cols=skipcols: x.lower() not in l_cols)) for f in table["filenames"]
-        ), ignore_index=True, sort=False)
+    df = pd.concat(
+        (
+            pd.read_csv(os.path.join(directory, f),
+                        usecols=(lambda x, y=skipcols: x.lower() not in y)
+                        ) for f in table["filenames"]
+        ),
+        ignore_index=True, sort=False)
 
     print("Removing empty columns and trimming whitespace...")
     # Removes columns with no values (NA)
@@ -322,12 +331,13 @@ def panda_to_csv(table_object, engine):
 
     table_name = table["name"]
     print("Exporting to csv...")
-    out_path = "C:/pySites/estuary-project/src/data/processed-dataset/jobos_bay"
+    out_path = "./data/processed-dataset/jobos_bay"
     filename = f"all_{table_name}_datapoints.csv"
     output = os.path.join(out_path, filename)
     df.to_csv(output, index=False, encoding='utf-8')
 
     csv_to_psql(table_name, output, df.columns.values, engine)
+
 
 # check if station is populated...
 def csv_to_psql(table_name, file, columns, engine):
