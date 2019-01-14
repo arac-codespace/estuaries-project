@@ -78,3 +78,16 @@ Now that I've got the code to populate the database, I need to link them all tog
 
 Decided to use sqlalchemy to create the schema and whatnot.  Was unable to use pandas to_sql and sqlalchemy's inserts/mass inserts methods because they were too slow.  Best work around I found is to agregate all the data into a dataframe, export to csv and then use that csv and a raw_connection to copy the csv into the database.  I was also able to use the same connection to populate the station_id for the dataset...
 
+---
+Now I'm at the create_visualization phase where I need to create the sql statements...
+
+ie:
+select date_trunc('day',datetimestamp), sum(no3f) as sum_no3f, avg(no3f) as avg_no3f
+from water_nutrient 
+where station_id = 2
+group by date_trunc('day',datetimestamp)
+order by date_trunc
+
+The above will group by day and include the sum and average of a column for a specific id...
+
+
