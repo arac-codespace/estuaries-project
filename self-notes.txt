@@ -90,4 +90,13 @@ order by date_trunc
 
 The above will group by day and include the sum and average of a column for a specific id...
 
+---
+select date_trunc('day',datetimestamp),avg(case when f_no3f not like '%-%' then no3f end) as avg_no3ff, avg(no3f) as avg_no3f, stationcode
+from water_nutrient 
+group by date_trunc('day',datetimestamp), stationcode
+order by date_trunc
 
+You can use "similar to" to provide alternatives.  Check docs...
+---
+
+ 
