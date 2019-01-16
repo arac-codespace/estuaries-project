@@ -46,9 +46,9 @@ def table_params(table_name):
     return table_params
 
 
-def create_math_sql(fx, params):
+def create_math_sql(fx, table):
     fx_statements = []
-    for param in params['params']:
+    for param in table['params']:
         '''
           Had to include this condition bc I found invalid values (-99)
           for atemp in meteorological data...
@@ -65,18 +65,18 @@ def create_math_sql(fx, params):
 
 def get_aggregate_by_date(table_name, date="month"):
 
-    params = table_params(table_name)
+    table = table_params(table_name)
 
-    column_sql = create_math_sql("avg", params)
+    column_sql = create_math_sql("avg", table)
 
     sql = f"""
         SELECT
-            date_trunc('{date}',datetimestamp),
+            date_trunc('{date}',datetimestamp) as date,
             stationcode,
             {column_sql}
         FROM {table_name}
-        GROUP BY date_trunc('{date}',datetimestamp), stationcode
-        ORDER BY date_trunc
+        GROUP BY date, stationcode
+        ORDER BY date
     """
     uri = create_cfg_uri()
     engine = create_engine(uri)
@@ -87,18 +87,22 @@ def get_aggregate_by_date(table_name, date="month"):
 
 def plot_line():
     df = get_aggregate_by_date('water_nutrient')
+    table = table_params('water_nutrient')
     # Need to convert datetime to something other than
     # datetime64 bc matplotlib doesn't seem to support it.
-    df.index = df['date_trunc'].astype('O')
-    del df['date_trunc']
-    lines = df.plot.line()
-    plt.show()
-    plt.close()
+    df.index = df['date'].astype('O')
+    del df['date']
 
-    # df["date_trunc"] = df["date_trunc"].astype("O")
-    # df.groupby(df["date_trunc"].dt.month).count()
-    # df.hist(grid=True)
-    # ts = pd.Series(np.random.randn(1000), index=pd.date_range('1/1/2000', periods=1000))
-    # ts = ts.cumsum()
-    # df.plot()
+    # Aggregate dict
+    f = {}
+    for param in table['params']:
+        f[f'avg_{param}'] = ['mean']
+        f[f'{param}_count'] = ['sum']
+
+    # Multi-index/grouped df.
+    gdf = df.groupby([df['stationcode'], df.index.month]).agg(f)
+    return gdf
+
+    # lines = df.plot.line()
     # plt.show()
+    # plt.close()

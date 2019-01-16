@@ -99,4 +99,41 @@ order by date_trunc
 You can use "similar to" to provide alternatives.  Check docs...
 ---
 
- 
+ Rearranging/grouping dataframe...
+ Matplotlib doesn't get along well with datetime64 which is what I'm getting from the database.  So... I needed to change the dtype to object.  I also decided to set the index...
+
+    ...
+    df.index = df['date_trunc'].astype('O')
+    del df['date_trunc']
+    ...
+
+When grouping, you can apply different functions (even custom ones) by providing agg() with
+a dictionary as follows...
+    ...
+    # Group by month and average avgs/sum counts...
+    f = {
+        'avg_po4f': ['mean'],
+        'po4f_count': ['sum'],
+        'avg_nh4f': ['mean'],
+        'nh4f_count': ['sum'],
+        'avg_no2f': ['mean'],
+        'no2f_count': ['sum'],
+        'avg_no3f': ['mean'],
+        'no3f_count': ['sum'],
+        'avg_no23f': ['mean'],
+        'no23f_count': ['sum'],
+        'avg_chla_n': ['mean'],
+        'chla_n_count': ['sum']
+    }
+
+    # Multi-index/ grouped df.
+    gdf = df.groupby([df['stationcode'],df.index.month]).agg(f)
+    ...
+
+To query, use df.loc[(rows), columns]
+Funny enough, if you want to get the data for 'month' (1 in this case) for all stations, you need to use slice(None).
+: denotes all columns...
+    ...
+    gdf.loc[(slice(None),1),:]
+    ...
+
