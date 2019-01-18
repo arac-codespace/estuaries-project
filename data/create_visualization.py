@@ -95,13 +95,33 @@ def plot_line():
 
     # Aggregate dict
     f = {}
+    # for use in legend
+    labels = []
     for param in table['params']:
         f[f'avg_{param}'] = ['mean']
         f[f'{param}_count'] = ['sum']
+        labels.append(param.upper())
 
     # Multi-index/grouped df.
-    gdf = df.groupby([df['stationcode'], df.index.month]).agg(f)
-    return gdf
+    gdf = df.groupby([('stationcode'), (df.index.year.rename('year')), (df.index.month).rename('month')]).agg(f)
+    fig, axes = plt.subplots(nrows=2, ncols=1)
+
+    fig.suptitle("Number of observations in station x")
+    gdf.loc['job20nut', (slice(None), 'sum')].groupby('year').sum().plot(kind='bar', ax=axes[0], legend=False)
+    gdf.loc['job20nut', (slice(None), 'sum')].groupby('month').sum().plot(kind='bar', ax=axes[1], legend=False)
+
+    axes[0].set_xlabel("Year")
+    axes[0].set_ylabel("Count")
+    axes[1].set_xlabel("Month")
+    axes[1].set_ylabel("Count")
+    plt.tight_layout(pad=3, h_pad=2)
+
+    handles = axes[0].get_legend_handles_labels()
+    # pdb.set_trace()
+    fig.legend(labels=labels, loc='upper right')    
+    # plt.figlegend(('po4f', "nh4f", "no2f", "no3f", "no23f", "chla_n"))
+    plt.show()
+    # return gdf
 
     # lines = df.plot.line()
     # plt.show()

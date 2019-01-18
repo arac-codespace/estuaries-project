@@ -82,11 +82,15 @@ Decided to use sqlalchemy to create the schema and whatnot.  Was unable to use p
 Now I'm at the create_visualization phase where I need to create the sql statements...
 
 ie:
-select date_trunc('day',datetimestamp), sum(no3f) as sum_no3f, avg(no3f) as avg_no3f
+select date_trunc('year',datetimestamp) as date,
+        avg(case when f_po4f not like '%-%' then po4f end) as avg_po4f,
+        avg(case when f_chla_n not like '%-%' then nh4f end) as avg_chla_n,
+        stationcode,
+        count(po4f) as pof4_count,
+        count(chla_n) as chla_n_count
 from water_nutrient 
-where station_id = 2
-group by date_trunc('day',datetimestamp)
-order by date_trunc
+group by date, stationcode
+order by date
 
 The above will group by day and include the sum and average of a column for a specific id...
 
@@ -98,8 +102,10 @@ order by date_trunc
 
 You can use "similar to" to provide alternatives.  Check docs...
 ---
+Rearranging/grouping dataframe...
+Used the following as reference.  Was incredibly useful!
+https://www.youtube.com/watch?v=tcRGa2soc-c
 
- Rearranging/grouping dataframe...
  Matplotlib doesn't get along well with datetime64 which is what I'm getting from the database.  So... I needed to change the dtype to object.  I also decided to set the index...
 
     ...
@@ -137,3 +143,28 @@ Funny enough, if you want to get the data for 'month' (1 in this case) for all s
     gdf.loc[(slice(None),1),:]
     ...
 
+---
+Need to make a multiplot figure where I get the number of datapoints monthly for a specific station.  In theory I should be able to make a subplot for every station and show count of each data_count in the same graph.
+
+Alternatively, I give each param a subplot and create a single image for a single station.
+
+---
+Code to mess with column labels.
+...
+idx = mydf.columns.get_level_values('level_2').to_series().str.contains('mystring')
+mydf.loc[:, idx.values]
+...
+or 
+...
+mydf.loc[:, ['mystring' in label for label in mydf.columns.get_level_values('level_2')]]
+...
+
+https://stackoverflow.com/questions/25274598/in-pandas-select-all-columns-whose-label-contains-a-given-string-at-a-specified
+
+Paste...
+    # To get columns names...
+    # col = [s for s in df.columns if 'avg' in s or 'count' in s]
+    # Silly way to slice
+    # adf=gdf.loc['job20nut',['po4f_count','nh4f_count','no2f_count','no3f_count','no23f_count','chla_n_count']]
+    # Correct wayt to slice and get sum/mean from sublevel
+    # gdf.loc[slice(None), (slice(None), 'sum')]
