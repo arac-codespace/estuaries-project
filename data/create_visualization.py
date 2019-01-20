@@ -88,6 +88,10 @@ def get_aggregate_by_date(table_name, date="month"):
 def plot_line():
     df = get_aggregate_by_date('water_nutrient')
     table = table_params('water_nutrient')
+
+    # for use in legend and restructuring df
+    labels = table['params']
+
     # Need to convert datetime to something other than
     # datetime64 bc matplotlib doesn't seem to support it.
     df.index = df['date'].astype('O')
@@ -95,15 +99,23 @@ def plot_line():
 
     # Aggregate dict
     f = {}
-    # for use in legend
-    labels = []
     for param in table['params']:
         f[f'avg_{param}'] = ['mean']
         f[f'{param}_count'] = ['sum']
-        labels.append(param.upper())
 
     # Multi-index/grouped df.
     gdf = df.groupby([('stationcode'), (df.index.year.rename('year')), (df.index.month).rename('month')]).agg(f)
+
+    # Creating tuples to restructure df
+    tuples = []
+    for x in gdf.columns.values:
+        for y in labels:
+            # Checks if plain param is in avg_param/count_param
+            if y in x[0]:
+                # (plain param, sum or mean)
+                tuples.append((y, x[1]))
+
+    gdf.columns = pd.MultiIndex.from_tuples(tuples)
     fig, axes = plt.subplots(nrows=2, ncols=1)
 
     fig.suptitle("Number of observations in station x")
@@ -117,12 +129,7 @@ def plot_line():
     plt.tight_layout(pad=3, h_pad=2)
 
     handles = axes[0].get_legend_handles_labels()
-    # pdb.set_trace()
+    # # pdb.set_trace()
     fig.legend(labels=labels, loc='upper right')    
-    # plt.figlegend(('po4f', "nh4f", "no2f", "no3f", "no23f", "chla_n"))
+    # # plt.figlegend(('po4f', "nh4f", "no2f", "no3f", "no23f", "chla_n"))
     plt.show()
-    # return gdf
-
-    # lines = df.plot.line()
-    # plt.show()
-    # plt.close()
