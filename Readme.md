@@ -1,5 +1,4 @@
 # Jobos Bay dataset exploration
-<<<<<<< HEAD
 
 Finally back to coding!
 
@@ -54,4 +53,4 @@ http://drna.pr.gov/wp-content/uploads/2017/08/Final-2017-2022-Jobos-Bay-Manageme
 The Research Advisory Committee recommended initiating this effort by identifying the points  where  changes  in  salinity  have  been  observed,  and  analyzing  historical events that may explain those changes. To date, a reduction in salinity has been observed at  stations 19 and 20. This could indicate seepage, and should be further monitored."
 
 Paper also mentions: Development of an hydrodynamic model, development of a groundwater flow model and research on carbon proccesses for climate change considerations.
->>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
+
