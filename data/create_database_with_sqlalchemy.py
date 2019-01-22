@@ -1,10 +1,17 @@
 import os
 import pandas as pd
+<<<<<<< HEAD
 import pdb
 from sqlalchemy import create_engine
 import fnmatch
 import d6tstack
 from configparser import ConfigParser
+=======
+# import pdb
+import fnmatch
+from configparser import ConfigParser
+from sqlalchemy import create_engine
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, MetaData, ForeignKey
 from sqlalchemy.orm import relationship, sessionmaker
@@ -12,6 +19,10 @@ from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION, TIMESTAMP
 
 print("Running Create Database with sqlalchemy script...")
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
 Base = declarative_base()
 
 
@@ -21,7 +32,11 @@ class Station(Base):
     id = Column(Integer, primary_key=True)
 
     nerrsite_id = Column(String)
+<<<<<<< HEAD
     stationcode = Column(String)
+=======
+    stationcode = Column(String, unique=True)
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
     station_name = Column(String)
     latitude = Column(DOUBLE_PRECISION)
     longitude = Column(DOUBLE_PRECISION)
@@ -108,17 +123,28 @@ class Meteorology(Base):
     station_id = Column(Integer, ForeignKey('station.id'))
     station = relationship("Station", back_populates="all_meteorology")
 
+<<<<<<< HEAD
     a_temp = Column(DOUBLE_PRECISION)
     f_a_temp = Column(String)
+=======
+    atemp = Column(DOUBLE_PRECISION)
+    f_atemp = Column(String)
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
     rh = Column(DOUBLE_PRECISION)
     f_rh = Column(String)
     bp = Column(DOUBLE_PRECISION)
     f_bp = Column(String)
     wspd = Column(DOUBLE_PRECISION)
     f_wspd = Column(String)
+<<<<<<< HEAD
     max_wspd = Column(DOUBLE_PRECISION)
     f_max_wspd = Column(String)
     max_wspdt = Column(String)
+=======
+    maxwspd = Column(DOUBLE_PRECISION)
+    f_maxwspd = Column(String)
+    maxwspdt = Column(String)
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
     wdir = Column(DOUBLE_PRECISION)
     f_wdir = Column(String)
     sdwdir = Column(DOUBLE_PRECISION)
@@ -132,6 +158,10 @@ class Meteorology(Base):
 
 
 def create_cfg_uri():
+<<<<<<< HEAD
+=======
+    print("Creating engine uri...")
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
     parser = ConfigParser()
     # read config file
     parser.read('database.ini')
@@ -172,6 +202,7 @@ def drop_tables():
     print("Done...")
 
 
+<<<<<<< HEAD
 def populate_stations():
     print("Populating stations...")
     directory = "C:/pySites/estuary-project/src/data/original-estuary-dataset/jobos-bay"
@@ -180,6 +211,13 @@ def populate_stations():
 
     df = pd.read_csv(os.path.join(directory, "jobos_sites.csv"))
     # pdb.set_trace()
+=======
+def populate_stations(directory="."):
+    print("Populating stations table...")
+    filenames = os.listdir(directory)
+
+    df = pd.read_csv(os.path.join(directory, "jobos_sites.csv"))
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
 
     cfg_uri_psql = create_cfg_uri()
     engine = create_engine(cfg_uri_psql)
@@ -209,6 +247,7 @@ def populate_stations():
     session.add_all(session_insert)
     print("Committing data...")
     session.commit()
+<<<<<<< HEAD
     print("Stations table populated...")
 
 
@@ -226,19 +265,119 @@ def populate_water_quality():
     if not len(filtered_filenames) > 0:
         print("No water quality files found...")
         return
+=======
+    print("Stations table populated.")
+
+
+def filter_filenames(filenames):
+    print("Filtering filenames...")
+    water_quality_files = []
+    water_nutrient_files = []
+    meteorology_files = []
+    for file in filenames:
+        if fnmatch.fnmatch(file, '*nut*') and fnmatch.fnmatch(file, '*.csv'):
+            water_nutrient_files.append(file)
+        elif fnmatch.fnmatch(file, '*wq*') and fnmatch.fnmatch(file, '*.csv'):
+            water_quality_files.append(file)
+        elif fnmatch.fnmatch(file, '*met*') and fnmatch.fnmatch(file, '*.csv'):
+            meteorology_files.append(file)
+
+    if not (
+        len(water_quality_files) and
+        len(water_nutrient_files) and
+        len(meteorology_files)
+    ):
+        raise ValueError(
+            "There are no valid data files in the specified directory"
+        )
+
+    filtered_filenames = {
+        "water_quality": water_quality_files,
+        "water_nutrient": water_nutrient_files,
+        "meteorology": meteorology_files,
+    }
+    return filtered_filenames
+
+
+def create_table_object(user_input, directory):
+    print("Creating table object...")
+    filenames = os.listdir(directory)
+    filtered_filenames = filter_filenames(filenames)
+
+    table_object = {
+        1: {
+            "name": "water_quality",
+            "filenames": filtered_filenames["water_quality"],
+            "directory": directory
+        },
+        2: {
+            "name": "water_nutrient",
+            "filenames": filtered_filenames["water_nutrient"],
+            "directory": directory
+        },
+        3: {
+            "name": "meteorology",
+            "filenames": filtered_filenames["meteorology"],
+            "directory": directory
+        }
+    }
+
+    return table_object.get(user_input)
+
+
+def tables_to_populate():
+    directory = "./original-estuary-dataset/jobos-bay"
+    cfg_uri_psql = create_cfg_uri()
+    engine = create_engine(cfg_uri_psql)
+
+    valid_input = False
+    while valid_input is False:
+        print("Choose which table to populate...")
+        print("1) Water Quality, 2) Water Nutrients, 3) Meteorology, 4) Stations, 5) Exit")
+        try:
+            user_input = input()
+            user_input = int(user_input)
+
+            if 1 <= user_input <= 3:
+                # print("Input:" + str(user_input))
+                table_object = create_table_object(user_input, directory)
+                panda_to_csv(table_object, engine)
+            elif user_input == 4:
+                # print("Input:" + str(user_input))
+                populate_stations(directory)
+            elif user_input == 5:
+                print("Exiting...")
+                break
+        except ValueError:
+            print("Input must be an integer.")
+            valid_input = False
+
+
+# Populate wq, nut, met, stations or all...
+def panda_to_csv(table_object, engine):
+    print("Converting data to csv...")
+    directory = table_object["directory"]
+    table = table_object
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
 
     skipcols = [
         "isSWMP", "Historical", "ProvisionalPlus",
         "CollMethd", "REP", "F_Record",
         "cDepth", "F_cDepth", "Level", "F_Level",
+<<<<<<< HEAD
         "cLevel", "F_cLevel", "ChlFluor", "F_ChlFluor"
 
+=======
+        "cLevel", "F_cLevel", "ChlFluor", "F_ChlFluor",
+        "Frequency"
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
     ]
     # Lower to prevent issues with letter case...
     skipcols = [x.lower() for x in skipcols]
 
     print("Agregating data and importing to dataframe")
 
+<<<<<<< HEAD
     print("Agregating data and importing to dataframe")
 
     df = pd.concat((pd.read_csv(
@@ -309,3 +448,66 @@ def csv_to_psql():
         """
         cursor.execute(sql)
         connection.commit()
+=======
+    df = pd.concat(
+        (
+            pd.read_csv(os.path.join(directory, f),
+                        usecols=(lambda x, y=skipcols: x.lower() not in y)
+                        ) for f in table["filenames"]
+        ),
+        ignore_index=True, sort=False)
+
+    print("Removing empty columns and trimming whitespace...")
+    # Removes columns with no values (NA)
+    df.dropna(axis=1, how='all', inplace=True)
+    df.columns = [x.lower() for x in df.columns]
+    # get rid of whitespace with trim!
+    df_obj = df.select_dtypes(['object'])
+    df[df_obj.columns] = df_obj.apply(lambda x: x.str.strip())
+    print(df)
+
+    table_name = table["name"]
+    print("Exporting to csv...")
+    out_path = "./data/processed-dataset/jobos_bay"
+    filename = f"all_{table_name}_datapoints.csv"
+    output = os.path.join(out_path, filename)
+    df.to_csv(output, index=False, encoding='utf-8')
+
+    csv_to_psql(table_name, output, df.columns.values, engine)
+
+
+# check if station is populated...
+def csv_to_psql(table_name, file, columns, engine):
+    print("CSV to psql...")
+    columns = ",".join(columns)
+    print(f"Columns for {table_name}: {columns}")
+
+    with open(file, 'r') as f:
+        connection = engine.raw_connection()
+        cursor = connection.cursor()
+        print("Copying csv to psql...")
+        sql = f"COPY {table_name}({columns}) FROM STDIN WITH CSV HEADER DELIMITER ','"
+        cursor.copy_expert(sql, f)
+
+        # Check if stations is populated, if not populate...
+        print("Checking if station is populated...")
+        sql = f"SELECT True FROM station LIMIT 1"
+        try:
+            station_is_populated = engine.execute(sql).fetchone()[0]
+        except TypeError as type_error:
+            print("Station not populated. Populating...")
+            print(type_error)
+            populate_stations()
+        finally:
+            # Set foreign key...
+            print("Setting foreign key...")
+            sql = f"""
+                UPDATE {table_name}
+                SET station_id = station.id
+                FROM station
+                WHERE {table_name}.stationcode = station.stationcode
+            """
+            cursor.execute(sql)
+            print("Transacition done.")
+            connection.commit()
+>>>>>>> 8c898489a6c27fa21130b6e805fcd7aea5ebe973
