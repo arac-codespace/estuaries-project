@@ -77,4 +77,3 @@ Now that I've got the code to populate the database, I need to link them all tog
 ---
 
 Decided to use sqlalchemy to create the schema and whatnot.  Was unable to use pandas to_sql and sqlalchemy's inserts/mass inserts methods because they were too slow.  Best work around I found is to agregate all the data into a dataframe, export to csv and then use that csv and a raw_connection to copy the csv into the database.  I was also able to use the same connection to populate the station_id for the dataset...
-
